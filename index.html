@@ -4,6 +4,7 @@
         <link rel="manifest" href="/manifest.json">
         <script type="text/javascript">
             var clevertap = { event: [], profile: [], account: [] };
+            // clevertap.account.push({ id: "WW6-589-W85Z" });
             clevertap.account.push({ id: "TEST-545-448-RW6Z" });
             (function() {
                 var wzrk = document.createElement("script");
@@ -178,6 +179,14 @@
                 getLS();
             }
 
+            function enablePush() {
+                clevertap.notifications.push({
+                    "titleText": 'Wish to receive push notifications?',
+                    "bodyText": 'Click Yes to receive push notifications',
+                    "okButtonText": 'Yes',
+                    "rejectButtonText": 'No'});
+            }
+
             function getLS() {
                 var LRU_CACHE = decodeURIComponent(localStorage["WZRK_X"]);
                 var WZRK_K = decodeURIComponent(localStorage["WZRK_K"]);
@@ -261,6 +270,9 @@
             Push Selected Events
         </button>
 
+        <button id="enablePushNotifications" onclick="enablePush()">
+            Enable Push Notifications
+        </button>
         <br />
         <hr />
         <button
