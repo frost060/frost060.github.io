@@ -187,6 +187,28 @@
                     "rejectButtonText": 'No'});
             }
 
+            function enableInbox () {
+                clevertap.inbox.push({
+                    selector: 'openInbox',
+                    button: {
+                        background: 'aliceblue'
+                    },
+                    header: {
+                        color: 'white',
+                        background: 'black'
+                    },
+                    tab: {
+                        background: '#ff0',
+                        color: '#00f',
+                        activeColor: '#f0f'
+                    },
+                    boxShadow: '0 2px 5px 0 rgba(255, 255, 255, 1)',
+                    background: '#81909e',
+                    position: 'top-right',
+                    tags: ['Promotions', 'Offer', 'Announcements', 'New']
+                })
+            }
+
             function getLS() {
                 var LRU_CACHE = decodeURIComponent(localStorage["WZRK_X"]);
                 var WZRK_K = decodeURIComponent(localStorage["WZRK_K"]);
@@ -230,7 +252,7 @@
         <button type="button" onclick="clearLocalStorage()">
             Clear Local Storage
         </button> -->
-        <h1>Test A-JS</h1>
+        <h1>Test A-JS</h1><div id="openInbox">Open Inbox</div>
         <button onclick="onClickPP()">Random PP</button>
         <button onclick="onClickOUL()">Random OUL</button>
         <button onclick="onClickEP()">Event Push</button>
@@ -272,6 +294,10 @@
 
         <button id="enablePushNotifications" onclick="enablePush()">
             Enable Push Notifications
+        </button>
+
+        <button id="enableInboxNotifications" onclick="enableInbox()">
+            Enable Inbox Notifications
         </button>
         <br />
         <hr />
