@@ -864,7 +864,7 @@
         var now = getNow();
 
         for (var id in inboxMessages) {
-          if (inboxMessages[id].wzrk_ttl < now) {
+          if (inboxMessages[id].wzrk_ttl && inboxMessages[id].wzrk_ttl > 0 && inboxMessages[id].wzrk_ttl < now) {
             delete inboxMessages[id];
           }
         }
@@ -4866,6 +4866,12 @@
     badge: {
       color: '#ffffff',
       background: '#ff0000'
+    },
+    customPosition: {
+      top: null,
+      left: null,
+      right: null,
+      bottom: null
     }
   };
 
@@ -4893,6 +4899,10 @@
 
   var _elementDeleted = _classPrivateFieldLooseKey("elementDeleted");
 
+  var _device$3 = _classPrivateFieldLooseKey("device");
+
+  var _session$3 = _classPrivateFieldLooseKey("session");
+
   var _open = _classPrivateFieldLooseKey("open");
 
   var _getInboxMessageObj = _classPrivateFieldLooseKey("getInboxMessageObj");
@@ -4916,6 +4926,10 @@
   var _createIconMessage = _classPrivateFieldLooseKey("createIconMessage");
 
   var _createActionButton = _classPrivateFieldLooseKey("createActionButton");
+
+  var _raiseNotificationClicked = _classPrivateFieldLooseKey("raiseNotificationClicked");
+
+  var _getCookieParam = _classPrivateFieldLooseKey("getCookieParam");
 
   var InboxHandler = /*#__PURE__*/function (_Array) {
     _inherits(InboxHandler, _Array);
@@ -4941,11 +4955,19 @@
       var _this;
 
       var logger = _ref.logger,
-          request = _ref.request;
+          request = _ref.request,
+          device = _ref.device,
+          session = _ref.session;
 
       _classCallCheck(this, InboxHandler);
 
       _this = _super.call(this);
+      Object.defineProperty(_assertThisInitialized(_this), _getCookieParam, {
+        value: _getCookieParam2
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _raiseNotificationClicked, {
+        value: _raiseNotificationClicked2
+      });
       Object.defineProperty(_assertThisInitialized(_this), _createActionButton, {
         value: _createActionButton2
       });
@@ -5031,9 +5053,19 @@
         writable: true,
         value: false
       });
+      Object.defineProperty(_assertThisInitialized(_this), _device$3, {
+        writable: true,
+        value: void 0
+      });
+      Object.defineProperty(_assertThisInitialized(_this), _session$3, {
+        writable: true,
+        value: void 0
+      });
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _logger$8)[_logger$8] = logger;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _request$6)[_request$6] = request;
       _classPrivateFieldLooseBase(_assertThisInitialized(_this), _oldValues$5)[_oldValues$5] = values;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _device$3)[_device$3] = device;
+      _classPrivateFieldLooseBase(_assertThisInitialized(_this), _session$3)[_session$3] = session;
       return _this;
     }
 
@@ -5107,7 +5139,14 @@
       }
     }, {
       key: "pushInboxNotificationClickedEvent",
-      value: function pushInboxNotificationClickedEvent() {// TODO: this is yet to be finalised
+      value: function pushInboxNotificationClickedEvent(inboxId) {
+        var inboxMessageObj = _classPrivateFieldLooseBase(this, _getInboxMessageObj)[_getInboxMessageObj]();
+
+        var inbox = inboxMessageObj[inboxId];
+
+        if (inbox) {
+          _classPrivateFieldLooseBase(this, _raiseNotificationClicked)[_raiseNotificationClicked](inbox);
+        }
       }
     }, {
       key: "_processOldValues",
@@ -5196,9 +5235,16 @@
       return b.date - a.date;
     });
     return inboxMessages.filter(function (inbox) {
-      return inbox.msg && inbox.msg.tags && (!_classPrivateFieldLooseBase(_this3, _tag)[_tag] || inbox.msg.tags.some(function (t) {
+      var _inbox$msg;
+
+      if (!_classPrivateFieldLooseBase(_this3, _tag)[_tag]) {
+        return true;
+      }
+
+      var tags = (inbox === null || inbox === void 0 ? void 0 : (_inbox$msg = inbox.msg) === null || _inbox$msg === void 0 ? void 0 : _inbox$msg.tags) || (inbox === null || inbox === void 0 ? void 0 : inbox.tags);
+      return tags && tags.some(function (t) {
         return t.toLowerCase() === _classPrivateFieldLooseBase(_this3, _tag)[_tag].toLowerCase();
-      }));
+      });
     });
   };
 
@@ -5255,8 +5301,28 @@
 
     var inboxDivCss = 'display: none; position: fixed; width: 375px; max-width: 80%; box-sizing: border-box; border-radius: 4px; z-index: 2147483647 !important;';
     inboxDivCss += " background-color: ".concat(inboxProps.background, "; box-shadow: ").concat(inboxProps.boxShadow, "; -webkit-box-shadow: ").concat(inboxProps.boxShadow, ";");
+    var customPosition = inboxProps.customPosition;
 
     switch (inboxProps.position) {
+      case 'custom':
+        if (customPosition.top != null) {
+          inboxDivCss += " top: ".concat(customPosition.top, "px;");
+        }
+
+        if (customPosition.bottom != null) {
+          inboxDivCss += " bottom: ".concat(customPosition.bottom, "px;");
+        }
+
+        if (customPosition.left != null) {
+          inboxDivCss += " left: ".concat(customPosition.left, "px;");
+        }
+
+        if (customPosition.right != null) {
+          inboxDivCss += " right: ".concat(customPosition.right, "px;");
+        }
+
+        break;
+
       case 'top-right':
         inboxDivCss += ' top: 100px; right: 30px;';
         break;
@@ -5288,7 +5354,7 @@
 
     var header = document.createElement('div');
     header.innerText = headerProps.text;
-    var headerCss = 'box-sizing: border-box; width: 100%; min-height: 40px; position: relative; padding: 16px 12px; font-size: 18px; border-radius: 4px 4px 0px 0px; position: relative; z-index: 1;';
+    var headerCss = 'box-sizing: border-box; width: 100%; min-height: 40px; position: relative; padding: 16px 12px; font-size: 18px; border-radius: 4px 4px 0px 0px; position: relative; z-index: 1; text-align: center;';
     headerCss += " color: ".concat(headerProps.color, "; background-color: ").concat(headerProps.background, ";");
 
     if (!hasTags) {
@@ -5313,8 +5379,9 @@
     var tagContainerCss = 'box-sizing: border-box; width: 100%; box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; -webkit-box-shadow: rgba(0, 0, 0, 0.16) 0px 2px 4px 1px; padding: 0px 12px; position: relative; z-index: 1;';
     tagContainerCss += " background-color: ".concat(inboxProps.tab.background, "; color: ").concat(inboxProps.tab.color);
     tagContainer.style.cssText = tagContainerCss;
-    var tags = ['All'].concat(_toConsumableArray(inboxProps.tags));
+    var tags = ['All'].concat(_toConsumableArray(inboxProps.tags.slice(0, 2)));
     var tagElements = [];
+    var width = 100 / tags.length;
 
     var _iterator = _createForOfIteratorHelper(tags),
         _step;
@@ -5323,8 +5390,8 @@
       for (_iterator.s(); !(_step = _iterator.n()).done;) {
         var tag = _step.value;
         var tagElement = document.createElement('div');
-        var tagCss = 'display: inline-block; position: relative; padding: 6px; border-bottom: 2px solid transparent; cursor: pointer;';
-        tagCss += "background-color: ".concat(inboxProps.tab.background, "; color: ").concat(inboxProps.tab.color);
+        var tagCss = 'display: inline-block; position: relative; padding: 6px; border-bottom: 2px solid transparent; cursor: pointer; box-sizing: border-box; text-align: center;';
+        tagCss += "background-color: ".concat(inboxProps.tab.background, "; color: ").concat(inboxProps.tab.color, "; width: ").concat(width, "%;");
         tagElement.style.cssText = tagCss;
         tagElement.innerText = tag;
         tagElement.addEventListener('click', function (e) {
@@ -5574,7 +5641,7 @@
     dateContainer.style.cssText = "box-sizing: border-box; width: 100%; text-align: right; padding: ".concat(hasMedia ? '12px' : '0px', " 16px 16px 16px; color: #63698F; font-size: 12px;");
     container.appendChild(dateContainer);
 
-    if (content.action && content.action.links && content.action.links.length) {
+    if (content.action && content.action.hasLinks && content.action.links && content.action.links.length) {
       var actionContainer = document.createElement('div');
       actionContainer.style.cssText = 'box-sizing: border-box; width: 100%;';
       var totalLinks = content.action.links.length;
@@ -5586,7 +5653,7 @@
         for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
           var link = _step5.value;
 
-          _classPrivateFieldLooseBase(this, _createActionButton)[_createActionButton](link, totalLinks, actionContainer);
+          _classPrivateFieldLooseBase(this, _createActionButton)[_createActionButton](link, totalLinks, actionContainer, inboxObj);
         }
       } catch (err) {
         _iterator5.e(err);
@@ -5598,7 +5665,9 @@
     }
   };
 
-  var _createActionButton2 = function _createActionButton2(link, totalCount, container) {
+  var _createActionButton2 = function _createActionButton2(link, totalCount, container, inboxObj) {
+    var _this8 = this;
+
     var action = document.createElement('div');
     var width = 100 / totalCount;
     action.innerText = link.text;
@@ -5607,7 +5676,8 @@
     action.onclick = function () {
       var _link$copyText, _link$url, _link$url$web;
 
-      // TODO: click tracking
+      _classPrivateFieldLooseBase(_this8, _raiseNotificationClicked)[_raiseNotificationClicked](inboxObj);
+
       if (link.type === 'copy' && ((_link$copyText = link.copyText) === null || _link$copyText === void 0 ? void 0 : _link$copyText.text)) {
         var input = document.createElement('input');
         input.type = 'text';
@@ -5639,15 +5709,33 @@
     container.appendChild(action);
   };
 
+  var _raiseNotificationClicked2 = function _raiseNotificationClicked2(inbox) {
+    var _inbox$msg2;
+
+    if (inbox === null || inbox === void 0 ? void 0 : (_inbox$msg2 = inbox.msg) === null || _inbox$msg2 === void 0 ? void 0 : _inbox$msg2.onClick) {
+      var url = inbox.msg.onClick + _classPrivateFieldLooseBase(this, _getCookieParam)[_getCookieParam]();
+
+      RequestDispatcher.fireRequest(url);
+    }
+  };
+
+  var _getCookieParam2 = function _getCookieParam2() {
+    var gcookie = _classPrivateFieldLooseBase(this, _device$3)[_device$3].getGuid();
+
+    var scookieObj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
+
+    return '&t=wc&d=' + encodeURIComponent(compressToBase64(gcookie + '|' + scookieObj.p + '|' + scookieObj.s));
+  };
+
   var _logger$9 = _classPrivateFieldLooseKey("logger");
 
   var _api = _classPrivateFieldLooseKey("api");
 
   var _onloadcalled = _classPrivateFieldLooseKey("onloadcalled");
 
-  var _device$3 = _classPrivateFieldLooseKey("device");
+  var _device$4 = _classPrivateFieldLooseKey("device");
 
-  var _session$3 = _classPrivateFieldLooseKey("session");
+  var _session$4 = _classPrivateFieldLooseKey("session");
 
   var _account$5 = _classPrivateFieldLooseKey("account");
 
@@ -5727,11 +5815,11 @@
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _device$3, {
+      Object.defineProperty(this, _device$4, {
         writable: true,
         value: void 0
       });
-      Object.defineProperty(this, _session$3, {
+      Object.defineProperty(this, _session$4, {
         writable: true,
         value: void 0
       });
@@ -5763,18 +5851,18 @@
 
       _classPrivateFieldLooseBase(this, _logger$9)[_logger$9] = new Logger(logLevels.INFO);
       _classPrivateFieldLooseBase(this, _account$5)[_account$5] = new Account((_clevertap$account = clevertap.account) === null || _clevertap$account === void 0 ? void 0 : _clevertap$account[0], clevertap.region, clevertap.targetDomain);
-      _classPrivateFieldLooseBase(this, _device$3)[_device$3] = new DeviceManager({
+      _classPrivateFieldLooseBase(this, _device$4)[_device$4] = new DeviceManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9]
       });
-      _classPrivateFieldLooseBase(this, _session$3)[_session$3] = new SessionManager({
+      _classPrivateFieldLooseBase(this, _session$4)[_session$4] = new SessionManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         isPersonalisationActive: this._isPersonalisationActive
       });
       _classPrivateFieldLooseBase(this, _request$7)[_request$7] = new RequestManager({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
-        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
+        device: _classPrivateFieldLooseBase(this, _device$4)[_device$4],
+        session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
         isPersonalisationActive: this._isPersonalisationActive
       });
       this.enablePersonalization = clevertap.enablePersonalization || false;
@@ -5792,9 +5880,9 @@
       this.onUserLogin = new UserLoginHandler({
         request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
         account: _classPrivateFieldLooseBase(this, _account$5)[_account$5],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3],
+        session: _classPrivateFieldLooseBase(this, _session$4)[_session$4],
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3]
+        device: _classPrivateFieldLooseBase(this, _device$4)[_device$4]
       }, clevertap.onUserLogin);
       this.privacy = new Privacy({
         request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
@@ -5807,13 +5895,15 @@
       }, clevertap.notifications);
       this.inbox = new InboxHandler({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
-        request: _classPrivateFieldLooseBase(this, _request$7)[_request$7]
+        request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
+        device: _classPrivateFieldLooseBase(this, _device$4)[_device$4],
+        session: _classPrivateFieldLooseBase(this, _session$4)[_session$4]
       }, clevertap.inbox);
       _classPrivateFieldLooseBase(this, _api)[_api] = new CleverTapAPI({
         logger: _classPrivateFieldLooseBase(this, _logger$9)[_logger$9],
         request: _classPrivateFieldLooseBase(this, _request$7)[_request$7],
-        device: _classPrivateFieldLooseBase(this, _device$3)[_device$3],
-        session: _classPrivateFieldLooseBase(this, _session$3)[_session$3]
+        device: _classPrivateFieldLooseBase(this, _device$4)[_device$4],
+        session: _classPrivateFieldLooseBase(this, _session$4)[_session$4]
       });
       this.spa = clevertap.spa;
       this.user = new User({
@@ -5821,10 +5911,10 @@
       });
       this.session = {
         getTimeElapsed: function getTimeElapsed() {
-          return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getTimeElapsed();
+          return _classPrivateFieldLooseBase(_this, _session$4)[_session$4].getTimeElapsed();
         },
         getPageCount: function getPageCount() {
-          return _classPrivateFieldLooseBase(_this, _session$3)[_session$3].getPageCount();
+          return _classPrivateFieldLooseBase(_this, _session$4)[_session$4].getPageCount();
         }
       };
 
@@ -5839,7 +5929,7 @@
       };
 
       this.getCleverTapID = function () {
-        return _classPrivateFieldLooseBase(_this, _device$3)[_device$3].getGuid();
+        return _classPrivateFieldLooseBase(_this, _device$4)[_device$4].getGuid();
       };
 
       var _handleEmailSubscription = function _handleEmailSubscription(subscription, reEncoded, fetchGroups) {
@@ -5852,7 +5942,7 @@
       api.clear = this.clear;
 
       api.closeIframe = function (campaignId, divIdIgnored) {
-        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(_this, _session$3)[_session$3].sessionId);
+        closeIframe(campaignId, divIdIgnored, _classPrivateFieldLooseBase(_this, _session$4)[_session$4].sessionId);
       };
 
       api.enableWebPush = function (enabled, applicationServerKey) {
@@ -5861,8 +5951,8 @@
 
       api.tr = function (msg) {
         _tr(msg, {
-          device: _classPrivateFieldLooseBase(_this, _device$3)[_device$3],
-          session: _classPrivateFieldLooseBase(_this, _session$3)[_session$3],
+          device: _classPrivateFieldLooseBase(_this, _device$4)[_device$4],
+          session: _classPrivateFieldLooseBase(_this, _session$4)[_session$4],
           request: _classPrivateFieldLooseBase(_this, _request$7)[_request$7],
           logger: _classPrivateFieldLooseBase(_this, _logger$9)[_logger$9],
           inbox: _this.inbox
@@ -5961,7 +6051,7 @@
           _classPrivateFieldLooseBase(this, _account$5)[_account$5].id = accountId;
         }
 
-        _classPrivateFieldLooseBase(this, _session$3)[_session$3].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$5)[_account$5].id;
+        _classPrivateFieldLooseBase(this, _session$4)[_session$4].cookieName = SCOOKIE_PREFIX + '_' + _classPrivateFieldLooseBase(this, _account$5)[_account$5].id;
 
         if (region) {
           _classPrivateFieldLooseBase(this, _account$5)[_account$5].region = region;
@@ -6002,12 +6092,12 @@
         var currLocation = window.location.href;
         var urlParams = getURLParams(currLocation.toLowerCase()); // -- update page count
 
-        var obj = _classPrivateFieldLooseBase(this, _session$3)[_session$3].getSessionCookieObject();
+        var obj = _classPrivateFieldLooseBase(this, _session$4)[_session$4].getSessionCookieObject();
 
         var pgCount = typeof obj.p === 'undefined' ? 0 : obj.p;
         obj.p = ++pgCount;
 
-        _classPrivateFieldLooseBase(this, _session$3)[_session$3].setSessionCookieObject(obj); // -- update page count
+        _classPrivateFieldLooseBase(this, _session$4)[_session$4].setSessionCookieObject(obj); // -- update page count
 
 
         var data = {};
